@@ -2,7 +2,7 @@ version: "3.9"
 services:
   web:
     build: ./react_frontend
-    container_name: react1
+    container_name: react9
     ports:
       - "3000:3000"
     volumes:
@@ -11,7 +11,7 @@ services:
     tty: true
   app:
     image: node:latest
-    container_name: nodeapp
+    container_name: nodeapp9
     environment:
       DB_HOST: mysql1
       DB_PORT: 3306
@@ -32,7 +32,7 @@ services:
     image: mysql:5.7
     platform: linux/amd64
     restart: always
-    container_name: db1
+    container_name: db9
     environment:
       - MYSQL_ROOT_PASSWORD=admin
     ports:
