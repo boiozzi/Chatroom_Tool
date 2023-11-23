@@ -1,0 +1,100 @@
+import React, { useState } from "react";
+import { BrowserRouter as Router, Route, Switch, Link } from "react-router-dom";
+import Login from "./Login";
+import Channel from "./Channel";
+import InsideChannel from "./InsideChannel";
+
+const App = () => {
+  const [user, setUser] = useState(null);
+  const handleLogin = (userData) => {
+    // Set the user data in the state
+    setUser(userData);
+  };
+  const handleLogout = () => {
+    // Handle the logout logic, e.g., clear user data from state or local storage
+    // Redirect the user to the login page
+    setUser(null);
+  };
+
+  return (
+
+    <div>
+      <nav className="navbar navbar-light bg-dark">
+        <Link
+          to="/search"
+          className="navbar-brand mx-5"
+          style={{ color: "#ffffff", textShadow: "1px 1px 1px #000000" }}
+        >
+          Search Channel
+        </Link>
+      </nav>
+      <div>
+        {user ? (
+          <>
+            <Channel user={user} />
+          </>
+        ) : (
+          <Login onLogin={handleLogin} />
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default App;
+
+
+import { React, useState, useEffect } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+
+// import Landing from './Landing';
+import Login from "./Login";
+import Channel from "./Channel";
+import InsideChannel from "./InsideChannel";
+
+function App() {
+  const [userInfo, setUserInfo] = useState(null);
+
+  useEffect(() => {
+    /* Check for saved authorization whenever the page loads */
+    const storeValue = localStorage.getItem("user");
+    if (storeValue !== null) {
+      setUserInfo(JSON.parse(storeValue));
+    }
+  }, []);
+
+  const onLoggedIn = (userid, username, admin) => {
+    const userJSON = {
+      userid: userid,
+      username: username,
+      admin: admin,
+    };
+    setUserInfo(userJSON);
+    /* Save authorization in local storage */
+    localStorage.setItem("user", JSON.stringify(userJSON));
+  };
+
+  // const onLoggedOut = () => {
+  //   setUserInfo(null);
+  //   /* Remove saved authorization from local storage */
+  //   localStorage.removeItem("user");
+  // };
+
+  return (
+      <Routes>
+        <Route path="/login" element={<Login onLoggedIn={onLoggedIn} />} />
+        <Route
+          path="/"
+          element={
+            userInfo ? <Channel user={userInfo} /> : <Navigate to="/login" />
+          }
+        />
+        <Route
+          path="/channels/:channelid/:title"
+          element={<InsideChannel user={userInfo} />}
+        />
+      </Routes>
+  );
+}
+
+export default App;
