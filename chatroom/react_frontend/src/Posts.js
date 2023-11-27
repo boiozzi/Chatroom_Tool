@@ -4,7 +4,7 @@ import axios from "axios";
 import Comments from "./Comments";
 
 const Posts = (props) => {
-  const { channelid, title } = useParams(); // set channel same and the titile name
+  const { channelid, name } = useParams(); // set channel same and the titile name
   const [posts, setPosts] = useState([]);
   const [newPost, setNewPost] = useState("");
 
@@ -50,7 +50,7 @@ const Posts = (props) => {
       );
 
       if (response.status !== 200) {
-        alert(`Error: could not add message to ${title}`);
+        alert(`Error: could not add message to ${name}`);
         return;
       }
 
@@ -64,8 +64,9 @@ const Posts = (props) => {
 
   return (
     <div className="text-center mx-auto my-4" style={{ maxWidth: "50%" }}>
-      <h1>{title}</h1>
-      <div className="d-flex mt-2">
+      <h1>{name}</h1>
+      {/* place the input box and create-post button in the center */}
+      <div className="d-flex justify-content-center align-items-center flex-column mt-2">
         <input
           id="InputBox"
           type="text"
@@ -75,7 +76,7 @@ const Posts = (props) => {
         />
         <button
           onClick={(e) => addPost(-1, newPost)}
-          className="btn btn-outline-success ml-2"
+          className="btn btn-outline-success mt-2"
         >
           Create Post
         </button>
@@ -88,7 +89,7 @@ const Posts = (props) => {
             user={props.user}
             addpost={addPost}
             getPosts={getPosts}
-            level={1}
+            replyDepth={1} // Assuming top-level comments have replyDepth 1
           />
         );
       })}

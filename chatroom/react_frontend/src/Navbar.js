@@ -10,9 +10,9 @@ const Navbar = ({ user, onLoggedOut }) => {
             {user ? (
               //render links for logged-in user
               <>
-              {/* view channel */}
+                {/* view channel */}
                 <li className="nav-item">
-                  <Link className="nav-link active" to="/channel">
+                  <Link className="nav-link active" to="/">
                     Channels
                   </Link>
                 </li>
@@ -41,7 +41,11 @@ const Navbar = ({ user, onLoggedOut }) => {
           </ul>
           {user && (
             // move the log out button the right side of the nav bar
-            <button type="button" className="btn btn-outline-success ms-auto" onClick={onLoggedOut}>
+            <button
+              type="button"
+              className="btn btn-outline-success ms-auto"
+              onClick={onLoggedOut}
+            >
               Logout
             </button>
           )}

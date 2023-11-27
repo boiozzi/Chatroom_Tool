@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const Login = (props) => {
@@ -27,7 +27,7 @@ const Login = (props) => {
       props.LOGin(user.userid, user.username, user.admin);
       // Save user data to localStorage
       localStorage.setItem("user", JSON.stringify(user));
-      
+
       navigate("/");
     } catch (error) {
       console.error("Login failed:", error);
@@ -67,6 +67,10 @@ const Login = (props) => {
       <button onClick={handleLogin} className="btn btn-primary">
         Login
       </button>
+
+      <div className="mt-2">
+        Don't have an account? <Link to="/register">Register here</Link>
+      </div>
     </div>
   );
 };
