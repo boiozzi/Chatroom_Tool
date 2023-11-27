@@ -28,7 +28,7 @@ connection.connect((err) => {
   console.log("Connected to MySQL Server!");
 });
 
-//Creates a database called sheqqdb and 4 tables(userInfo, messages, ratings, channels).
+//Creates a database called sheqqdb and 4 tables(userInfo, messages, comments, channels).
 app.get("/init", (req, res) => {
   connection.query(`CREATE DATABASE IF NOT EXISTS sheqqdb`, (error, result) => {
     if (error) {
@@ -97,7 +97,8 @@ app.get("/init", (req, res) => {
     `CREATE TABLE IF NOT EXISTS posts (
     postid int unsigned NOT NULL auto_increment,
     channel int unsigned NOT NULL,
-    user int unsigned NOT NULL,
+    parentid int NOT NULL,
+    user varchar(280) NOT NULL,
     data varchar(280) NOT NULL,
     PRIMARY KEY (postid)
 )`,
@@ -108,43 +109,42 @@ app.get("/init", (req, res) => {
     }
   );
 
-  // create table for ratings
-  connection.query(`CREATE TABLE IF NOT EXISTS ratings (
-    ratingid int unsigned NOT NULL auto_increment,
+  // create table for comments
+  connection.query(`CREATE TABLE IF NOT EXISTS comment (
+    commentid int unsigned NOT NULL auto_increment,
     channelid int unsigned NOT NULL,
     postid int unsigned NOT NULL,
-    raterid int unsigned NOT NULL,
-    rating int unsigned NOT NULL,
-    PRIMARY KEY (ratingid)
+    user varchar(280) NOT NULL,
+    data varchar(280) NOT NULL,
+    PRIMARY KEY (commentid)
 )`);
   res.send("Database and Table created!");
 });
 
 // login into system
 app.post("/login", (req, res) => {
-  let username = req.body.username;
-  let password = req.body.password;
+  // Extracting username and password from the request body
+  const { username, password } = req.body;
 
-  connection.query(`USE sheqqdb`, function (error, results) {
-    if (error) console.log(error);
-  });
-
+  // check if the user exists and get user details along with admin status
   connection.query(
-    `SELECT * FROM userInfo WHERE username = "${username}" AND password = "${password}"`,
-    (error, result) => {
+    `SELECT userid, username, CASE WHEN userid = 1 THEN 1 ELSE 0 END as admin FROM userInfo WHERE username = ? AND password = ?`,
+    [username, password],
+    (error, results) => {
       if (error) {
         console.error(error);
         res.status(400).send(error);
-      } else if (result.length === 0) {
+      } else if (results.length === 0) {
+        // If no matching user found, return unauthorized status
         res.status(401).send();
       } else {
-        res.status(200).send(
-          JSON.stringify({
-            userid: result[0].userid,
-            username: result[0].username,
-            admin: result[0].userid === 1,
-          })
-        );
+        // Extracting user details and admin status from the query results
+        const user = {
+          userid: results[0].userid,
+          username: results[0].username,
+          admin: results[0].admin === 1,
+        };
+        res.status(200).send(JSON.stringify(user));
       }
     }
   );
@@ -175,6 +175,9 @@ app.post("/register", (req, res) => {
 
 // create channal
 app.post("/createChannel", (req, res) => {
+  connection.query(`USE sheqqdb`, function (error, results) {
+    if (error) console.log(error);
+  });
   let name = req.body.name;
   connection.query(
     `INSERT INTO channels (name) VALUES ('${name}')`,
@@ -190,6 +193,9 @@ app.post("/createChannel", (req, res) => {
 
 // retrive channel from database
 app.get("/getChannel", (req, res) => {
+  connection.query(`USE sheqqdb`, function (error, results) {
+    if (error) console.log(error);
+  });
   connection.query("SELECT * FROM channels", (error, results) => {
     if (error) {
       console.error(error);
@@ -214,8 +220,7 @@ app.delete("/deleteChannel/:channelid", (req, res) => {
         console.error(error);
         res.status(500).send("Error deleting channel");
       } else {
-        console.log(`Channel with ID ${channelid} deleted successfully`);
-        res.status(200).send("Channel deleted successfully");
+        res.status(200).send("Channel deleted");
       }
     }
   );
@@ -223,13 +228,17 @@ app.delete("/deleteChannel/:channelid", (req, res) => {
 
 // create a post in channel with id, in which channel, the person who posts it, and the post data.
 app.post("/:channelid/addPost", (req, res) => {
+  connection.query(`USE sheqqdb`, function (error, results) {
+    if (error) console.log(error);
+  });
   let channel = req.params.channelid;
-  let user = req.body.username;
+  let user = req.body.user;
   let data = req.body.data;
+  let parentid = req.body.parentid; // can be a reply!
   connection.query(
     `INSERT INTO posts
-      (channelid, userid, parentid, text) VALUES 
-      ('${channel}', '${user}', '${data}')`,
+      (channel, parentid, user, data) VALUES 
+      ('${channel}', '${parentid}', '${user}', '${data}')`,
     (error, result) => {
       if (error) {
         console.error(error);
@@ -245,6 +254,9 @@ app.post("/:channelid/addPost", (req, res) => {
 // Get posts for a specific channel
 app.get("/:channel/getPosts", (req, res) => {
   let channel = req.params.channel;
+  connection.query(`USE sheqqdb`, function (error, results) {
+    if (error) console.log(error);
+  });
 
   connection.query(
     `SELECT * FROM posts WHERE channel = '${channel}'`,
@@ -253,11 +265,180 @@ app.get("/:channel/getPosts", (req, res) => {
         console.error(error);
         res.status(400).send(error);
       } else {
-        res.status(200).json(result);
+        const postsWithReplies = buildNestedStructure(result);
+        res.status(200).json(postsWithReplies);
       }
     }
   );
 });
 
+app.get("/:channel/getPosts", (req, res) => {
+  let channel = req.params.channel;
+  connection.query(`USE sheqqdb`, function (error, results) {
+    if (error) console.log(error);
+  });
+
+  connection.query(
+    `SELECT * FROM posts WHERE channel = '${channel}'`,
+    (error, result) => {
+      if (error) {
+        console.error(error);
+        res.status(400).send(error);
+      } else {
+        const postsWithReplies = buildNestedStructure(result);
+        res.status(200).json(postsWithReplies);
+      }
+    }
+  );
+});
+
+// Helper function to build nested structure
+function buildNestedStructure(posts) {
+  const postMap = new Map();
+
+  // First pass: Create a map of posts
+  posts.forEach((post) => {
+    const postId = post.postid;
+    post.replies = []; // Initialize replies array
+    postMap.set(postId, post);
+  });
+
+  // Second pass: Attach replies to their parent posts
+  posts.forEach((post) => {
+    const parentId = post.parentid;
+    if (parentId !== null) {
+      const parentPost = postMap.get(parentId);
+      if (parentPost) {
+        parentPost.replies.push(post);
+      }
+    }
+  });
+
+  // Filter out posts that are replies
+  const topLevelPosts = posts.filter((post) => post.parentid === -1);
+  console.log('Posts after second pass:', posts);
+  console.log('Top-level posts:', topLevelPosts);
+
+  return topLevelPosts;
+}
+
+//delete a post and all its replies.
+app.delete("/:channelid/posts/removePost/:postid", (req, res) => {
+  const channelID = req.params.channelid;
+  const postID = req.params.postid;
+
+  connection.query(`USE sheqqdb`, function (error, results) {
+    if (error) console.log(error);
+  });
+  connection.query(
+    `DELETE FROM posts WHERE channel = ? AND postID = ?`,
+    [channelID, postID],
+    (error, result) => {
+      if (error) {
+        console.error(error);
+        res.status(500).send("Internal Server Error");
+        return;
+      }
+
+      // Check if any rows were affected (post deleted successfully)
+      if (result.affectedRows > 0) {
+        res.status(200).send("Post deleted successfully");
+      } else {
+        // If no rows were affected, the post might not exist
+        res.status(404).send("Post not found");
+      }
+    }
+  );
+});
+
+// adding a post
+app.post("/:channelid/posts/:postid/addComment", (req, res) => {
+  const channelID = req.params.channelid;
+  const postID = req.params.postid;
+  const user = req.body.user;
+  const data = req.body.data;
+
+  connection.query(`USE sheqqdb`, function (error, results) {
+    if (error) console.log(error);
+  });
+
+  connection.query(
+    `INSERT INTO comment (channelid, postid, user, data) VALUES (?, ?, ?, ?)`,
+    [channelID, postID, user, data],
+    (error, result) => {
+      if (error) {
+        console.error(error);
+        res.status(400).send(error);
+      } else {
+        res.status(200).send();
+      }
+    }
+  );
+});
+
+//get comments for a post
+app.get("/:channelid/posts/:postid/getComments", (req, res) => {
+  const channelID = req.params.channelid;
+  const postID = req.params.postid;
+
+  connection.query(`USE sheqqdb`, function (error, results) {
+    if (error) {
+      console.log(error);
+      res.status(500).send("Internal Server Error");
+      return;
+    }
+
+    connection.query(
+      `SELECT * FROM comment WHERE channelid = ? AND postid = ?`,
+      [channelID, postID],
+      (error, result) => {
+        if (error) {
+          console.error(error);
+          res.status(500).send("Internal Server Error");
+          return;
+        }
+
+        res.status(200).json(result);
+      }
+    );
+  });
+});
+
+// delete a comment
+app.delete("/:channelid/posts/:postid/removeComment/:commentid", (req, res) => {
+  const channelID = req.params.channelid;
+  const postID = req.params.postid;
+  const commentID = req.params.commentid;
+
+  connection.query(`USE sheqqdb`, function (error, results) {
+    if (error) {
+      console.log(error);
+      res.status(500).send("Internal Server Error");
+      return;
+    }
+
+    connection.query(
+      `DELETE FROM comment WHERE channelid = ? AND postid = ? AND commentid = ?`,
+      [channelID, postID, commentID],
+      (error, result) => {
+        if (error) {
+          console.error(error);
+          res.status(500).send("Internal Server Error");
+          return;
+        }
+
+        // Check if any rows were affected (comment deleted successfully)
+        if (result.affectedRows > 0) {
+          res.status(200).send("Comment deleted successfully");
+        } else {
+          // If no rows were affected, the comment might not exist
+          res.status(404).send("Comment not found");
+        }
+      }
+    );
+  });
+});
+
+// Start the server
 app.listen(PORT, HOST);
 console.log(`Running on http://${HOST}:${PORT}`);

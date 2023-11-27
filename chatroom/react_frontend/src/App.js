@@ -1,25 +1,28 @@
 import { React, useState, useEffect } from "react";
-import { Routes, Route, Navigate, Link } from "react-router-dom";
+import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 
 // import Landing from './Landing';
 import Login from "./Login";
 import Register from "./Register";
 import Channel from "./Channel";
-import InsideChannel from "./InsideChannel";
+import CreatePosts from "./Posts";
+import Navbar from "./Navbar";
 import LandingPage from "./LandingPage";
 
 function App() {
   const [userInfo, setUserInfo] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     /* Check for saved authorization whenever the page loads */
     const storeValue = localStorage.getItem("user");
     if (storeValue !== null) {
-      setUserInfo(JSON.parse(storeValue));
+      const userJSON = JSON.parse(storeValue);
+      setUserInfo(userJSON);
     }
   }, []);
 
-  const onLogIn = (userid, username, admin) => {
+  const LOGin = (userid, username, admin) => {
     const userJSON = {
       userid: userid,
       username: username,
@@ -34,34 +37,16 @@ function App() {
     setUserInfo(null);
     /* Remove saved authorization from local storage */
     localStorage.removeItem("user");
+    navigate("/login");
   };
 
   return (
-    <div>
-      {/* Navigation Bar */}
-      <nav className="navbar navbar-expand-lg navbar-light bg-light">
-        <Link to="/" className="navbar-brand">
-          Your App Name
-        </Link>
-        <div className="collapse navbar-collapse" id="navbarNav">
-          <ul className="navbar-nav ml-auto">
-            <li className="nav-item">
-              <Link to="/login" className="nav-link">
-                Log In
-              </Link>
-            </li>
-            <li className="nav-item">
-              <Link to="/register" className="nav-link">
-                Sign Up
-              </Link>
-            </li>
-          </ul>
-        </div>
-      </nav>
+    <>
+      <Navbar user={userInfo} onLoggedOut={onLoggedOut} />
 
       <Routes>
-        <Route path="/login" element={<Login onLogIn={onLogIn} />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login LOGin={LOGin} />} />
+        <Route path="/register" element={<Register LOGin={LOGin} />} />
         <Route
           path="/"
           element={
@@ -69,11 +54,11 @@ function App() {
           }
         />
         <Route
-          path="/channels/:channelid/:title"
-          element={<InsideChannel user={userInfo} />}
+          path="/channels/:channelid/:name"
+          element={<CreatePosts user={userInfo} />} // pass user information into createposts
         />
       </Routes>
-    </div>
+    </>
   );
 }
 

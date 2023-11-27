@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 
 const Channel = ({ user }) => {
-//   const [error, setError] = useState(false);
+  //   const [error, setError] = useState(false);
   const [channels, setChannels] = useState([]);
   const [newChannel, setNewChannel] = useState("");
 
@@ -78,21 +78,14 @@ const Channel = ({ user }) => {
   };
 
   return (
-    // <div>
-    //   <nav
-    //     className="navbar navbar-light bg-dark"
-    // >
-    //     <Link to="/search" className="navbar-brand mx-5" style={{ color: "#ffffff", textShadow: "1px 1px 1px #000000" }}>
-    //       Search Channel
-    //     </Link>
-    //   </nav>
-      <div
-        className="container mt-4 p-4"
-        style={{ backgroundColor: "#f8f9fa", borderRadius: "8px" }}
-      >
-        <h1 className="mb-3">Hello, {user.username}!</h1>
-        <h2 className="mb-3">Welcome to SHEqq</h2>
-        <div className="mb-3 d-flex justify-content-between align-items-center">
+    <div
+      className="container mt-4 p-4"
+      style={{ backgroundColor: "#f8f9fa", borderRadius: "8px" }}
+    >
+      <h1 className="mb-3">Hello, {user.username}!</h1>
+      <h2 className="mb-3">Welcome to SHEqq</h2>
+      <div className="mb-3 d-flex justify-content-between align-items-center">
+        <div className="input-group" style={{ maxWidth: "60%" }}>
           <input
             type="text"
             id="createChannel"
@@ -101,44 +94,45 @@ const Channel = ({ user }) => {
             value={newChannel}
             onChange={(e) => setNewChannel(e.target.value)}
           />
-          <button className="btn btn-success" onClick={createChannel}>
-            Create Channel
-          </button>
-        </div>
-        {channels.map((channel) => (
-          <div
-            key={channel.channelid}
-            className="container mb-2 d-flex justify-content-between align-items-center"
-            style={{
-              backgroundColor: "#fff",
-              padding: "8px",
-              borderRadius: "4px",
-            }}
-          >
-            <Link
-              to={`/channels/${channel.channelid}/${channel.name}`}
-              key={channel.channelid}
-              className="btn btn-primary mr-2"
+          <div className="input-group-append">
+            <button
+              className="btn btn-outline-success rounded-pill"
+              onClick={createChannel}
             >
-              {channel.name}
-            </Link>
-            {user.admin && (
-              <button
-                className="btn btn-danger"
-                onClick={() => deleteChannel(channel.channelid, channel.name)}
-              >
-                Delete
-              </button>
-            )}
+              Create Channel
+            </button>
           </div>
-        ))}
-        <div className="d-flex mt-3">
-          <Link to="/users" className="btn btn-secondary mr-2">
-            Users
-          </Link>
         </div>
       </div>
-    // </div>
+      {channels.map((channel) => (
+        <div
+          key={channel.channelid}
+          className="container mb-2 d-flex justify-content-between align-items-center"
+          style={{
+            backgroundColor: "#ff",
+            borderRadius: "4px",
+          }}
+        >
+          <Link
+            to={`/channels/${channel.channelid}/${channel.name}`}
+            key={channel.channelid}
+            className="btn btn-primary rounded-pill w-100"
+            style={{ borderRadius: "4px 4px 0 0" }}
+          >
+            {channel.name}
+          </Link>
+          {user.admin && (
+            <button
+              type="button"
+              className="btn btn-outline-danger rounded-pill"
+              onClick={() => deleteChannel(channel.channelid, channel.name)}
+            >
+              Delete
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
   );
 };
 

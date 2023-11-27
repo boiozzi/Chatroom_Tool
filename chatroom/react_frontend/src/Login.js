@@ -24,7 +24,10 @@ const Login = (props) => {
       );
       // Pass user data to the parent component
       const user = response.data;
-      props.onLogIn(user.userid, user.username, user.admin);
+      props.LOGin(user.userid, user.username, user.admin);
+      // Save user data to localStorage
+      localStorage.setItem("user", JSON.stringify(user));
+      
       navigate("/");
     } catch (error) {
       console.error("Login failed:", error);

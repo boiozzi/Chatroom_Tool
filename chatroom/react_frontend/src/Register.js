@@ -24,8 +24,9 @@ const Register = (props) => {
       );
       // Pass user data to the parent component
       const user = response.data;
-      props.onLogIn(user.userid, user.username, user.admin);
-      navigate("/");
+      props.LOGin(user.userid, user.username, user.admin);
+      alert("Registration Successed! Now go log in and start SHEqqing:)");
+      navigate("/login"); // navigate to login otherwise user information will not be stored.
     } catch (error) {
       console.error("Register failed:", error);
     }
@@ -63,7 +64,6 @@ const Register = (props) => {
       <button onClick={register} className="btn btn-primary">
         Sign Up
       </button>
-
     </div>
   );
 };
