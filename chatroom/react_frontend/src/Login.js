@@ -27,7 +27,6 @@ const Login = (props) => {
       props.LOGin(user.userid, user.username, user.admin);
       // Save user data to localStorage
       localStorage.setItem("user", JSON.stringify(user));
-
       navigate("/");
     } catch (error) {
       console.error("Login failed:", error);

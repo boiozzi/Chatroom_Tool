@@ -24,7 +24,7 @@ const Posts = (props) => {
     }
   };
 
-  const addPost = async (parentid, data) => {
+  const addPost = async (parentid, data, topic) => {
     if (!props.user || !props.user.username) {
       console.error("User information is missing.");
       return;
@@ -33,6 +33,7 @@ const Posts = (props) => {
     const requestBody = new URLSearchParams({
       user: props.user.username,
       data: data,
+      topic: topic,
       channel: channelid,
       parentid: parentid,
     });
@@ -70,7 +71,7 @@ const Posts = (props) => {
         <input
           id="InputBox"
           type="text"
-          placeholder="Create a post"
+          placeholder="Enter Your Post Here"
           value={newPost}
           onChange={(e) => setNewPost(e.target.value)}
         />

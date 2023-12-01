@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 
 const Channel = ({ user }) => {
-  //   const [error, setError] = useState(false);
   const [channels, setChannels] = useState([]);
   const [newChannel, setNewChannel] = useState("");
 

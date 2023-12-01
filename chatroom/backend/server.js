@@ -28,7 +28,7 @@ connection.connect((err) => {
   console.log("Connected to MySQL Server!");
 });
 
-//Creates a database called sheqqdb and 4 tables(userInfo, messages, comments, channels).
+//Creates a database called sheqqdb and 4 tables(userInfo, posts, channels, likes).
 app.get("/init", (req, res) => {
   connection.query(`CREATE DATABASE IF NOT EXISTS sheqqdb`, (error, result) => {
     if (error) {
@@ -109,15 +109,22 @@ app.get("/init", (req, res) => {
     }
   );
 
-  // create table for comments
-  connection.query(`CREATE TABLE IF NOT EXISTS comment (
-    commentid int unsigned NOT NULL auto_increment,
-    channelid int unsigned NOT NULL,
-    postid int unsigned NOT NULL,
-    user varchar(280) NOT NULL,
-    data varchar(280) NOT NULL,
-    PRIMARY KEY (commentid)
-)`);
+  // create table for likes
+  connection.query(
+    `CREATE TABLE IF NOT EXISTS likes (
+      likesid int unsigned NOT NULL auto_increment,
+      user varchar(280) NOT NULL,
+      channelid int unsigned NOT NULL,
+      postid int unsigned NOT NULL,
+      PRIMARY KEY (likesid)
+  )`,
+    (error, result) => {
+      if (error) {
+        console.error(error);
+      }
+    }
+  );
+
   res.send("Database and Table created!");
 });
 
@@ -125,6 +132,10 @@ app.get("/init", (req, res) => {
 app.post("/login", (req, res) => {
   // Extracting username and password from the request body
   const { username, password } = req.body;
+
+  connection.query(`USE sheqqdb`, function (error, results) {
+    if (error) console.log(error);
+  });
 
   // check if the user exists and get user details along with admin status
   connection.query(
@@ -234,7 +245,7 @@ app.post("/:channelid/addPost", (req, res) => {
   let channel = req.params.channelid;
   let user = req.body.user;
   let data = req.body.data;
-  let parentid = req.body.parentid; // can be a reply!
+  let parentid = req.body.parentid;
   connection.query(
     `INSERT INTO posts
       (channel, parentid, user, data) VALUES 
@@ -250,28 +261,7 @@ app.post("/:channelid/addPost", (req, res) => {
   );
 });
 
-// get posts from a channel.
 // Get posts for a specific channel
-app.get("/:channel/getPosts", (req, res) => {
-  let channel = req.params.channel;
-  connection.query(`USE sheqqdb`, function (error, results) {
-    if (error) console.log(error);
-  });
-
-  connection.query(
-    `SELECT * FROM posts WHERE channel = '${channel}'`,
-    (error, result) => {
-      if (error) {
-        console.error(error);
-        res.status(400).send(error);
-      } else {
-        const postsWithReplies = buildNestedStructure(result);
-        res.status(200).json(postsWithReplies);
-      }
-    }
-  );
-});
-
 app.get("/:channel/getPosts", (req, res) => {
   let channel = req.params.channel;
   connection.query(`USE sheqqdb`, function (error, results) {
@@ -316,8 +306,8 @@ function buildNestedStructure(posts) {
 
   // Filter out posts that are replies
   const topLevelPosts = posts.filter((post) => post.parentid === -1);
-  console.log('Posts after second pass:', posts);
-  console.log('Top-level posts:', topLevelPosts);
+  console.log("Posts after second pass:", posts);
+  console.log("Top-level posts:", topLevelPosts);
 
   return topLevelPosts;
 }
@@ -434,6 +424,34 @@ app.delete("/:channelid/posts/:postid/removeComment/:commentid", (req, res) => {
           // If no rows were affected, the comment might not exist
           res.status(404).send("Comment not found");
         }
+      }
+    );
+  });
+});
+
+//get likes for a post
+app.get("/:channelid/posts/:postid/getlikes", (req, res) => {
+  const channelID = req.params.channelid;
+  const postID = req.params.postid;
+  const user = req.params.user;
+
+  connection.query(`USE sheqqdb`, function (error, results) {
+    if (error) {
+      console.log(error);
+      res.status(500).send("Internal Server Error");
+      return;
+    }
+
+    connection.query(
+      `SELECT * FROM likes WHERE channelid = ? AND postid = ? AND user = ?`,
+      [channelID, postID, user],
+      (error, result) => {
+        if (error) {
+          console.error(error);
+          res.status(500).send("Internal Server Error");
+          return;
+        }
+        res.status(200).json(result);
       }
     );
   });

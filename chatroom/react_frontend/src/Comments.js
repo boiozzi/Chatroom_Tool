@@ -27,59 +27,6 @@ const Comment = (props) => {
   };
 
   return (
-    //     <div
-    //       className={`container mb-2 d-flex justify-content-between align-items-center`}
-    //       style={{
-    //         backgroundColor: "#fff",
-    //         padding: "8px",
-    //         borderRadius: "4px",
-    //         marginLeft: `${replyDepth}px`, // indentation
-    //       }}
-    //     >
-    //       <div>
-    //         <div className="content">
-    //           {/* display post */}
-    //           <b>{props.data.user}:</b>
-    //           <p>{props.data.data}</p>
-    //         </div>
-    //         {props.user.admin && (
-    //           <button className="btn btn-danger" onClick={deletePost}>
-    //             Delete
-    //           </button>
-    //         )}
-
-    //         <div className="mt-2">
-    //           <input
-    //             type="text"
-    //             placeholder="Add a comment..."
-    //             value={newComment}
-    //             onChange={(e) => setNewComment(e.target.value)}
-    //           />
-    //           <button onClick={addComment} className="btn btn-success ml-2">
-    //             Add Comment
-    //           </button>
-    //         </div>
-
-    //         {/* Recursively render replies */}
-    //         {props.data.replies && props.data.replies.length > 0 && (
-    //           <div className="ml-4">
-    //             {props.data.replies.map((comment, index) => (
-    //               <Comment
-    //                 key={index}
-    //                 data={comment}
-    //                 user={props.user}
-    //                 addpost={props.addpost}
-    //                 getPosts={props.getPosts}
-    //                 replyDepth={props.replyDepth + 1}
-    //               />
-    //             ))}
-    //           </div>
-    //         )}
-    //       </div>
-    //     </div>
-    //   );
-    // };
-
     <div
       className={`card mb-2`}
       style={{
