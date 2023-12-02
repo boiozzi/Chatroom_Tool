@@ -16,10 +16,10 @@ const Navbar = ({ user, onLoggedOut }) => {
                     Channels
                   </Link>
                 </li>
-                {/* view users */}
+
                 <li className="nav-item">
-                  <Link className="nav-link mx-auto" to="/users">
-                    Users
+                  <Link className="nav-link mx-auto" to="/search">
+                    Search
                   </Link>
                 </li>
               </>

@@ -1,10 +1,24 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 
 const Comment = (props) => {
   const [newComment, setNewComment] = useState("");
+  const [likesInfo, setLikesInfo] = useState({
+    totalLikes: props.data.likes || 0,
+    userLiked: props.data.userLiked || false,
+  });
+  const [DislikesInfo, setDisLikesInfo] = useState({
+    totaDislLikes: props.data.dislikes || 0,
+    userDisliked: props.data.usedisLiked || false,
+  });
+
   const channel = props.data.channel;
   const postid = props.data.postid;
+
+  useEffect(() => {
+    getLikesInfo();
+    getDislikesInfo();
+  }, []);
 
   // adding comments to a post(or to a reply)
   const addComment = async () => {
@@ -23,6 +37,85 @@ const Comment = (props) => {
       }
     } catch (error) {
       console.error(error);
+    }
+  };
+
+  // Function to add a like to a post or reply
+  const toggleLike = async () => {
+    try {
+      const response = await axios.post(
+        `http://localhost:8080/${props.data.channel}/posts/${props.data.postid}/addlike`,
+        { user: props.user.username }
+      );
+      console.log("Server response:", response.data);
+
+      if (response.status === 200) {
+        setLikesInfo({
+          totalLikes: likesInfo.userLiked
+            ? likesInfo.totalLikes - 1
+            : likesInfo.totalLikes + 1,
+          userLiked: !likesInfo.userLiked,
+        });
+      } else {
+        console.error("Failed to toggle like:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+    }
+  };
+
+  // add dislike to post or reply
+  const ToggleDislike = async () => {
+    try {
+      const response = await axios.post(
+        `http://localhost:8080/${channel}/posts/${postid}/toggledislike`,
+        { user: props.user.username }
+      );
+
+      if (response.status === 200) {
+        setDisLikesInfo({
+          totaDislLikes: DislikesInfo.userDisliked
+            ? DislikesInfo.totaDislLikes - 1
+            : DislikesInfo.totaDislLikes + 1,
+          userDisliked: !DislikesInfo.userDisliked,
+        });
+      } else {
+        console.error("Error toggling dislike", response);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // update the total number of likes
+  const getLikesInfo = async () => {
+    try {
+      const response = await axios.get(
+        `http://localhost:8080/${props.data.channel}/posts/${props.data.postid}/gettotallikes`
+      );
+
+      setLikesInfo({
+        totalLikes: response.data.totalLikes,
+        userLiked: response.data.userLiked,
+      });
+    } catch (error) {
+      console.error("Error fetching likes info:", error);
+    }
+  };
+
+  // update the total number of dislikes
+  const getDislikesInfo = async () => {
+    try {
+      const response = await axios.get(
+        `http://localhost:8080/${props.data.channel}/posts/${props.data.postid}/gettotalDislikes`
+      );
+
+      setDisLikesInfo({
+        totaDislLikes: response.data.totalDislikes,
+        userDisliked: response.data.userDisliked,
+      });
+    } catch (error) {
+      console.error("Error fetching likes info:", error);
     }
   };
 
@@ -58,6 +151,27 @@ const Comment = (props) => {
           />
           <button onClick={addComment} className="btn btn-success ml-2">
             Add Comment
+          </button>
+        </div>
+
+        <div className="mt-2">
+          <button
+            onClick={toggleLike}
+            className={`btn ${
+              likesInfo.userLiked ? "btn-success" : "btn-danger"
+            } mr-2`}
+          >
+            {likesInfo.userLiked ? "Unlike" : "Like"} ({likesInfo.totalLikes})
+          </button>
+
+          <button
+            onClick={ToggleDislike}
+            className={`btn ${
+              DislikesInfo.userDisliked ? "btn-success" : "btn-danger"
+            } mr-2`}
+          >
+            {DislikesInfo.userDisliked ? "UnDislike" : "Dislike"} (
+            {DislikesInfo.totaDislLikes})
           </button>
         </div>
 

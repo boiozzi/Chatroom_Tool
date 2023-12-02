@@ -116,6 +116,8 @@ app.get("/init", (req, res) => {
       user varchar(280) NOT NULL,
       channelid int unsigned NOT NULL,
       postid int unsigned NOT NULL,
+      likes int unsigned NOT NULL DEFAULT 0,
+      dislikes int unsigned NOT NULL DEFAULT 0,
       PRIMARY KEY (likesid)
   )`,
     (error, result) => {
@@ -341,35 +343,11 @@ app.delete("/:channelid/posts/removePost/:postid", (req, res) => {
   );
 });
 
-// adding a post
-app.post("/:channelid/posts/:postid/addComment", (req, res) => {
+// Add likes to a post
+app.post("/:channelid/posts/:postid/addlike", async (req, res) => {
   const channelID = req.params.channelid;
   const postID = req.params.postid;
-  const user = req.body.user;
-  const data = req.body.data;
-
-  connection.query(`USE sheqqdb`, function (error, results) {
-    if (error) console.log(error);
-  });
-
-  connection.query(
-    `INSERT INTO comment (channelid, postid, user, data) VALUES (?, ?, ?, ?)`,
-    [channelID, postID, user, data],
-    (error, result) => {
-      if (error) {
-        console.error(error);
-        res.status(400).send(error);
-      } else {
-        res.status(200).send();
-      }
-    }
-  );
-});
-
-//get comments for a post
-app.get("/:channelid/posts/:postid/getComments", (req, res) => {
-  const channelID = req.params.channelid;
-  const postID = req.params.postid;
+  const user = req.body.user; // Assuming the user information is sent in the request body
 
   connection.query(`USE sheqqdb`, function (error, results) {
     if (error) {
@@ -378,72 +356,13 @@ app.get("/:channelid/posts/:postid/getComments", (req, res) => {
       return;
     }
 
-    connection.query(
-      `SELECT * FROM comment WHERE channelid = ? AND postid = ?`,
-      [channelID, postID],
-      (error, result) => {
-        if (error) {
-          console.error(error);
-          res.status(500).send("Internal Server Error");
-          return;
-        }
-
-        res.status(200).json(result);
-      }
-    );
-  });
-});
-
-// delete a comment
-app.delete("/:channelid/posts/:postid/removeComment/:commentid", (req, res) => {
-  const channelID = req.params.channelid;
-  const postID = req.params.postid;
-  const commentID = req.params.commentid;
-
-  connection.query(`USE sheqqdb`, function (error, results) {
-    if (error) {
-      console.log(error);
-      res.status(500).send("Internal Server Error");
-      return;
+    // Validate the incoming data
+    if (!channelID || !postID || !user) {
+      return res.status(400).send("Bad Request: Missing required data");
     }
 
     connection.query(
-      `DELETE FROM comment WHERE channelid = ? AND postid = ? AND commentid = ?`,
-      [channelID, postID, commentID],
-      (error, result) => {
-        if (error) {
-          console.error(error);
-          res.status(500).send("Internal Server Error");
-          return;
-        }
-
-        // Check if any rows were affected (comment deleted successfully)
-        if (result.affectedRows > 0) {
-          res.status(200).send("Comment deleted successfully");
-        } else {
-          // If no rows were affected, the comment might not exist
-          res.status(404).send("Comment not found");
-        }
-      }
-    );
-  });
-});
-
-//get likes for a post
-app.get("/:channelid/posts/:postid/getlikes", (req, res) => {
-  const channelID = req.params.channelid;
-  const postID = req.params.postid;
-  const user = req.params.user;
-
-  connection.query(`USE sheqqdb`, function (error, results) {
-    if (error) {
-      console.log(error);
-      res.status(500).send("Internal Server Error");
-      return;
-    }
-
-    connection.query(
-      `SELECT * FROM likes WHERE channelid = ? AND postid = ? AND user = ?`,
+      `SELECT * FROM likes WHERE channelid = ? AND postid = ? AND user = ? AND likes = 1`,
       [channelID, postID, user],
       (error, result) => {
         if (error) {
@@ -451,10 +370,233 @@ app.get("/:channelid/posts/:postid/getlikes", (req, res) => {
           res.status(500).send("Internal Server Error");
           return;
         }
-        res.status(200).json(result);
+
+        if (result.length > 0) {
+          // User has already liked the post, remove the like
+          connection.query(
+            "DELETE FROM likes WHERE channelid = ? AND postid = ? AND user = ?",
+            [channelID, postID, user],
+            (error, deleteResult) => {
+              if (error) {
+                console.error(error);
+                res.status(500).send("Internal Server Error");
+                return;
+              }
+
+              res.status(200).send("Like removed successfully");
+            }
+          );
+        } else {
+          // User has not liked the post, add a new like
+          connection.query(
+            `INSERT INTO likes (channelid, postid, user, likes) VALUES (?, ?, ?, 1)`,
+            [channelID, postID, user],
+            (error, insertResult) => {
+              if (error) {
+                console.error(error);
+                res.status(500).send("Internal Server Error");
+                return;
+              }
+
+              res.status(200).send("Like added successfully");
+            }
+          );
+        }
       }
     );
   });
+});
+
+// Add dislikes to a post or reply
+app.post("/:channelid/posts/:postid/toggledislike", async (req, res) => {
+  const channelID = req.params.channelid;
+  const postID = req.params.postid;
+  const user = req.body.user; // Assuming the user information is sent in the request body
+
+  connection.query(`USE sheqqdb`, function (error, results) {
+    if (error) {
+      console.log(error);
+      res.status(500).send("Internal Server Error");
+      return;
+    }
+
+    // Validate the incoming data
+    if (!channelID || !postID || !user) {
+      return res.status(400).send("Bad Request: Missing required data");
+    }
+
+    // Check if the user has already disliked the post or reply
+    connection.query(
+      `SELECT * FROM likes WHERE channelid = ? AND postid = ? AND user = ? AND dislikes = 1`,
+      [channelID, postID, user],
+      (error, result) => {
+        if (error) {
+          console.error(error);
+          res.status(500).send("Internal Server Error");
+          return;
+        }
+
+        if (result.length > 0) {
+          // User has already disliked the post or reply, remove the dislike
+          connection.query(
+            "DELETE FROM likes WHERE channelid = ? AND postid = ? AND user = ? AND dislikes = 1",
+            [channelID, postID, user],
+            (deleteError) => {
+              if (deleteError) {
+                console.error(deleteError);
+                res.status(500).send("Internal Server Error");
+                return;
+              }
+
+              res.status(200).send("Dislike removed successfully");
+            }
+          );
+        } else {
+          // User has not disliked the post or reply, add a new dislike
+          connection.query(
+            `INSERT INTO likes (channelid, postid, user, dislikes) VALUES (?, ?, ?, 1)`,
+            [channelID, postID, user],
+            (insertError) => {
+              if (insertError) {
+                console.error(insertError);
+                res.status(500).send("Internal Server Error");
+                return;
+              }
+
+              res.status(200).send("Dislike added successfully");
+            }
+          );
+        }
+      }
+    );
+  });
+});
+
+// Get total likes for a post
+app.get("/:channelid/posts/:postid/gettotallikes", (req, res) => {
+  const channelID = req.params.channelid;
+  const postID = req.params.postid;
+  connection.query(`USE sheqqdb`, function (error, results) {
+    if (error) console.log(error);
+  });
+  // Your server-side logic to fetch total likes
+
+  connection.query(
+    `SELECT COUNT(*) as totalLikes FROM likes WHERE channelid = ? AND postid = ? AND likes = 1`,
+    [channelID, postID],
+    (errorLikes, resultLikes) => {
+      if (errorLikes) {
+        console.error(errorLikes);
+        res.status(500).send("Internal Server Error");
+        return;
+      }
+
+      res.status(200).json({ totalLikes: resultLikes[0].totalLikes });
+    }
+  );
+});
+
+// Get total dislikes for a post
+app.get("/:channelid/posts/:postid/gettotalDislikes", (req, res) => {
+  const channelID = req.params.channelid;
+  const postID = req.params.postid;
+  connection.query(`USE sheqqdb`, function (error, results) {
+    if (error) console.log(error);
+  });
+  // Your server-side logic to fetch total likes
+
+  connection.query(
+    `SELECT COUNT(*) as totalDislikes FROM likes WHERE channelid = ? AND postid = ? AND dislikes = 1`,
+    [channelID, postID],
+    (erroDislikes, resultDislikes) => {
+      if (erroDislikes) {
+        console.error(erroDislikes);
+        res.status(500).send("Internal Server Error");
+        return;
+      }
+
+      res.status(200).json({ totalDislikes: resultDislikes[0].totalDislikes });
+    }
+  );
+});
+
+//search for posts
+app.get("/search/content", (req, res) => {
+  const searchString = req.query.q;
+  connection.query(`USE sheqqdb`, function (error, results) {
+    if (error) console.log(error);
+  });
+  connection.query(
+    `SELECT * FROM posts WHERE data LIKE ?`,
+    [`%${searchString}%`],
+    (error, results) => {
+      if (error) {
+        console.error(error);
+        res.status(500).send("Internal Server Error");
+      } else {
+        res.status(200).json(results);
+      }
+    }
+  );
+});
+
+//search for post posted by a specific user
+app.get("/search/user-content", (req, res) => {
+  const username = req.query.username;
+  connection.query(`USE sheqqdb`, function (error, results) {
+    if (error) console.log(error);
+  });
+
+  connection.query(
+    `SELECT * FROM posts WHERE user = ?`,
+    [username],
+    (error, results) => {
+      if (error) {
+        console.error(error);
+        res.status(500).send("Internal Server Error");
+        return;
+      }
+      res.status(200).json(results);
+    }
+  );
+});
+
+// Get users with the most posts
+app.get("/users/most-posts", (req, res) => {
+  connection.query(`USE sheqqdb`, function (error, results) {
+    if (error) console.log(error);
+  });
+
+  connection.query(
+    "SELECT user, COUNT(*) as postCount FROM posts GROUP BY user ORDER BY postCount DESC LIMIT 10",
+    (error, results) => {
+      if (error) {
+        console.error(error);
+        res.status(500).send("Internal Server Error");
+        return;
+      }
+      res.status(200).json(results);
+    }
+  );
+});
+
+// Get users with the least posts
+app.get("/users/least-posts", (req, res) => {
+  connection.query(`USE sheqqdb`, function (error, results) {
+    if (error) console.log(error);
+  });
+
+  connection.query(
+    "SELECT user, COUNT(*) as postCount FROM posts GROUP BY user ORDER BY postCount ASC LIMIT 10",
+    (error, results) => {
+      if (error) {
+        console.error(error);
+        res.status(500).send("Internal Server Error");
+        return;
+      }
+      res.status(200).json(results);
+    }
+  );
 });
 
 // Start the server
