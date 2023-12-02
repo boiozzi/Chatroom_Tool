@@ -599,6 +599,37 @@ app.get("/users/least-posts", (req, res) => {
   );
 });
 
+// get users with highest rating of posts/replies
+app.get("/users/highest-likes", (req, res) => {
+  connection.query(
+    "SELECT user, COUNT(*) as likeCount FROM likes WHERE likes = 1 GROUP BY user ORDER BY likeCount DESC LIMIT 10",
+    (error, results) => {
+      if (error) {
+        console.error(error);
+        res.status(500).send("Internal Server Error");
+        return;
+      }
+      res.status(200).json(results);
+    }
+  );
+});
+
+// Get users with the lowest post count
+// Get users with the lowest post count
+app.get("/users/lowest-likes", (req, res) => {
+  connection.query(
+    "SELECT user, COUNT(*) as likeCount FROM likes WHERE likes = 1 GROUP BY user ORDER BY likeCount ASC LIMIT 10",
+    (error, results) => {
+      if (error) {
+        console.error(error);
+        res.status(500).send("Internal Server Error");
+        return;
+      }
+      res.status(200).json(results);
+    }
+  );
+  });
+
 // Start the server
 app.listen(PORT, HOST);
 console.log(`Running on http://${HOST}:${PORT}`);

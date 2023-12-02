@@ -11,6 +11,10 @@ const Search = () => {
   // add this to conditionally render the showing user with most/least posts
   const [showMostPosts, setShowMostPosts] = useState(false);
   const [showLeastPosts, setShowLeastPosts] = useState(false);
+  const [mostLikes, setMostLikes] = useState([]);
+  const [leastLikes, setLeastLikes] = useState([]);
+  const [showMostLikes, setShowMostLikes] = useState(false);
+  const [showLeastLikes, setShowLeastLikes] = useState(false);
 
   // search for post by contents
   const searchContent = async () => {
@@ -63,21 +67,57 @@ const Search = () => {
     }
   };
 
+  // get user with most likes
+  const getUsersWithHighestLikes = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:8080/users/highest-likes"
+      );
+      console.log(response.data[0]);
+      setMostLikes(response.data[0]);
+      setShowMostLikes(true);
+      // Update state or UI to display the users with the highest like count
+    } catch (error) {
+      console.error("Error fetching users with highest likes:", error);
+    }
+  };
+
+  // get user with the least likes
+  const getUsersWithLeastLikes = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:8080/users/lowest-likes"
+      );
+      console.log(response.data[0]);
+      setLeastLikes(response.data[0]);
+      setShowLeastLikes(true);
+      // Update state or UI to display the users with the highest like count
+    } catch (error) {
+      console.error("Error fetching users with lowest likes:", error);
+    }
+  };
+
   const clearSearch = () => {
     setMostPosts("");
-    setShowMostPosts(false);
     setLeastPosts("");
+    setMostLikes("");
+    setLeastLikes("");
+    setShowMostPosts(false);
     setShowLeastPosts(false);
+    setShowMostLikes(false);
+    setShowLeastLikes(false);
   };
 
   return (
     <div className="container mt-4">
       {/* Buttons at the top */}
+      {/* show user with most post */}
       <div className="d-flex justify-content-between mb-4">
         <div>
           <button className="btn btn-primary" onClick={getUsersWithMostPosts}>
             Users with Most Posts
           </button>
+
           {showMostPosts && (
             <div>
               <h2>Users with Most Posts</h2>
@@ -91,6 +131,8 @@ const Search = () => {
             </div>
           )}
         </div>
+          
+          {/* show user with least post */}
         <div>
           <button className="btn btn-primary" onClick={getUsersWithLeastPosts}>
             Users with Least Posts
@@ -108,6 +150,47 @@ const Search = () => {
             </div>
           )}
         </div>
+          {/* show user with most likes */}
+        <div>
+          <button
+            className="btn btn-primary"
+            onClick={getUsersWithHighestLikes}
+          >
+            Users with Highest Likes
+          </button>
+          {showMostLikes && (
+            <div>
+              <h2>Users with Highest Likes</h2>
+              {mostLikes ? (
+                <p>
+                  {mostLikes.user} - {mostLikes.likeCount} likes
+                </p>
+              ) : (
+                <p>No user found with highest likes</p>
+              )}
+            </div>
+          )}
+        </div>
+
+          {/* show user with least likes */}
+        <div>
+          <button className="btn btn-primary" onClick={getUsersWithLeastLikes}>
+            Users with Least Likes
+          </button>
+          {showLeastLikes && (
+            <div>
+              <h2>Users with Least Likes</h2>
+              {leastLikes ? (
+                <p>
+                  {leastLikes.user} - {leastLikes.likeCount} likes
+                </p>
+              ) : (
+                <p>No user found with least likes</p>
+              )}
+            </div>
+          )}
+        </div>
+
         <div>
           <button className="btn btn-secondary" onClick={clearSearch}>
             Clear
@@ -117,7 +200,6 @@ const Search = () => {
 
       {/* search boxes(by content or by username) */}
       <div className="container mt-4">
-
         {/* search posts by content */}
         <div className="input-group mb-3">
           <input
