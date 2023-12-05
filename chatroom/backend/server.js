@@ -100,6 +100,7 @@ app.get("/init", (req, res) => {
     parentid int NOT NULL,
     user varchar(280) NOT NULL,
     data varchar(280) NOT NULL,
+    time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (postid)
 )`,
     (error, result) => {
@@ -628,7 +629,7 @@ app.get("/users/lowest-likes", (req, res) => {
       res.status(200).json(results);
     }
   );
-  });
+});
 
 // Start the server
 app.listen(PORT, HOST);

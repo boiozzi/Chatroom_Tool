@@ -16,9 +16,41 @@ const Comment = (props) => {
   const postid = props.data.postid;
 
   useEffect(() => {
+    // update the total number of likes
+    const getLikesInfo = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:8080/${props.data.channel}/posts/${props.data.postid}/gettotallikes`
+        );
+
+        setLikesInfo({
+          totalLikes: response.data.totalLikes,
+          userLiked: response.data.userLiked,
+        });
+      } catch (error) {
+        console.error("Error fetching likes info:", error);
+      }
+    };
+
+    // update the total number of dislikes
+    const getDislikesInfo = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:8080/${props.data.channel}/posts/${props.data.postid}/gettotalDislikes`
+        );
+
+        setDisLikesInfo({
+          totaDislLikes: response.data.totalDislikes,
+          userDisliked: response.data.userDisliked,
+        });
+      } catch (error) {
+        console.error("Error fetching likes info:", error);
+      }
+    };
+
     getLikesInfo();
     getDislikesInfo();
-  }, []);
+  }, [props.data.channel, props.data.postid]);
 
   // adding comments to a post(or to a reply)
   const addComment = async () => {
@@ -87,38 +119,6 @@ const Comment = (props) => {
     }
   };
 
-  // update the total number of likes
-  const getLikesInfo = async () => {
-    try {
-      const response = await axios.get(
-        `http://localhost:8080/${props.data.channel}/posts/${props.data.postid}/gettotallikes`
-      );
-
-      setLikesInfo({
-        totalLikes: response.data.totalLikes,
-        userLiked: response.data.userLiked,
-      });
-    } catch (error) {
-      console.error("Error fetching likes info:", error);
-    }
-  };
-
-  // update the total number of dislikes
-  const getDislikesInfo = async () => {
-    try {
-      const response = await axios.get(
-        `http://localhost:8080/${props.data.channel}/posts/${props.data.postid}/gettotalDislikes`
-      );
-
-      setDisLikesInfo({
-        totaDislLikes: response.data.totalDislikes,
-        userDisliked: response.data.userDisliked,
-      });
-    } catch (error) {
-      console.error("Error fetching likes info:", error);
-    }
-  };
-
   return (
     <div
       className={`card mb-2`}
@@ -140,6 +140,11 @@ const Comment = (props) => {
             </button>
           )}
         </div>
+
+        {/* Timestamp at the bottom */}
+        <p className="text-muted mt-2">
+          {new Date(props.data.time).toLocaleString()}
+        </p>
 
         {/* Input for adding comments */}
         <div className="mt-2">
