@@ -22,6 +22,12 @@ const Navbar = ({ user, onLoggedOut }) => {
                     Search
                   </Link>
                 </li>
+
+                <li className="nav-item">
+                  <Link className="nav-link" to="/users">
+                    Users
+                  </Link>
+                </li>
               </>
             ) : (
               // Render links for not logged-in user

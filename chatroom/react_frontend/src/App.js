@@ -8,7 +8,8 @@ import Channel from "./Channel";
 import CreatePosts from "./Posts";
 import Navbar from "./Navbar";
 import Search from "./Search";
-
+import LandingPage from "./LandingPage";
+import Users from "./Users";
 
 function App() {
   const [userInfo, setUserInfo] = useState(null);
@@ -46,13 +47,42 @@ function App() {
       <Navbar user={userInfo} onLoggedOut={onLoggedOut} />
 
       <Routes>
+        <Route path="/landingpage" element={<LandingPage />} />
         <Route path="/login" element={<Login LOGin={LOGin} />} />
         <Route path="/register" element={<Register LOGin={LOGin} />} />
-        <Route path="/search" element={<Search user={userInfo} />} />
-        <Route path="/" element={ userInfo ? <Channel user={userInfo} /> : <Navigate to="/login" />} />
-        <Route path="/channels/:channelid/:name" element={<CreatePosts user={userInfo} />} /> 
+        <Route
+          path="/search"
+          element={
+            userInfo ? <Search user={userInfo} /> : <Navigate to="/login" />
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            userInfo ? <Users user={userInfo} /> : <Navigate to="/login" />
+          }
+        />
+        <Route
+          path="/"
+          element={
+            userInfo ? (
+              <Channel user={userInfo} />
+            ) : (
+              <Navigate to="/landingpage" />
+            )
+          }
+        />
+        <Route
+          path="/channels/:channelid/:name"
+          element={
+            userInfo ? (
+              <CreatePosts user={userInfo} />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
       </Routes>
-      
     </>
   );
 }

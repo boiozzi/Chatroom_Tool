@@ -12,6 +12,8 @@ const Comment = (props) => {
     userDisliked: props.data.usedisLiked || false,
   });
 
+  const canAddPicture = props.user.username === props.data.user;
+  const [selectedImage, setSelectedImage] = useState(null);
   const channel = props.data.channel;
   const postid = props.data.postid;
 
@@ -50,7 +52,13 @@ const Comment = (props) => {
 
     getLikesInfo();
     getDislikesInfo();
-  }, [props.data.channel, props.data.postid]);
+
+    const storedImage = localStorage.getItem(`selectedImage_${postid}`);
+    if (storedImage) {
+      // Decode base64 image and set it as selectedImage
+      setSelectedImage(dataURItoFile(storedImage, `screenshot_${postid}.png`));
+    }
+  }, [props.data.channel, props.data.postid, postid]);
 
   // adding comments to a post(or to a reply)
   const addComment = async () => {
@@ -119,6 +127,38 @@ const Comment = (props) => {
     }
   };
 
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64Image = e.target.result;
+
+      // Save base64 encoded image to local storage
+      localStorage.setItem(`selectedImage_${postid}`, base64Image);
+      setSelectedImage(file);
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  const dataURItoFile = (dataURI, filename) => {
+    try {
+      const byteString = atob(dataURI.split(",")[1]);
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+
+      return new File([ab], filename, { type: "image/png" });
+    } catch (error) {
+      console.error("Error decoding base64 string:", error);
+      return null;
+    }
+  };
+
   return (
     <div
       className={`card mb-2`}
@@ -141,6 +181,14 @@ const Comment = (props) => {
           )}
         </div>
 
+        {selectedImage && (
+          <img
+            src={URL.createObjectURL(selectedImage)}
+            alt="Selected Screenshot"
+            style={{ maxWidth: "100%", marginTop: "10px" }}
+          />
+        )}
+
         {/* Timestamp at the bottom */}
         <p className="text-muted mt-2">
           {new Date(props.data.time).toLocaleString()}
@@ -158,6 +206,19 @@ const Comment = (props) => {
             Add Comment
           </button>
         </div>
+
+        {/* Button to trigger file input */}
+        {canAddPicture && (
+          <label className="btn btn-primary ml-2">
+            Add Screenshot
+            <input
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={handleFileUpload}
+            />
+          </label>
+        )}
 
         <div className="mt-2">
           <button

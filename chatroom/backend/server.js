@@ -29,72 +29,71 @@ connection.connect((err) => {
 });
 
 //Creates a database called sheqqdb and 4 tables(userInfo, posts, channels, likes).
-app.get("/init", (req, res) => {
-  connection.query(`CREATE DATABASE IF NOT EXISTS sheqqdb`, (error, result) => {
-    if (error) {
-      console.error(error);
-    }
-  });
+connection.query(`CREATE DATABASE IF NOT EXISTS sheqqdb`, (error, result) => {
+  if (error) {
+    console.error(error);
+  }
+});
 
-  /* Set the current database to "sheqqdb" */
-  connection.query(`USE sheqqdb`, (error, result) => {
-    if (error) {
-      console.error(error);
-    }
-  });
+/* Set the current database to "sheqqdb" */
+connection.query(`USE sheqqdb`, (error, result) => {
+  if (error) {
+    console.error(error);
+  }
+});
 
-  /* Create "userInfo" table if it doesn't already exist */
-  connection.query(
-    `CREATE TABLE IF NOT EXISTS userInfo (
+/* Create "userInfo" table if it doesn't already exist */
+connection.query(
+  `CREATE TABLE IF NOT EXISTS userInfo (
     userid int unsigned NOT NULL auto_increment,
     username varchar(20) NOT NULL,
     password varchar(20) NOT NULL,
     PRIMARY KEY (userid),
     UNIQUE (username, password)
 )`,
-    (error, result) => {
-      if (error) {
-        console.error(error);
-      } else {
-        connection.query(`SELECT * FROM userInfo`, (error, result) => {
-          if (error) {
-            console.error(error);
-          } else {
-            // add admin information into the user table first.
-            if (result.length === 0) {
-              console.log("Creating system administrator!");
-              connection.query(
-                `INSERT INTO userInfo (username, password) VALUES ("${ADMIN_USERNAME}", "${ADMIN_PASSWORD}")`,
-                (error, result) => {
-                  if (error) {
-                    console.error(error);
-                  }
+  (error, result) => {
+    if (error) {
+      console.error(error);
+    } else {
+      connection.query(`SELECT * FROM userInfo`, (error, result) => {
+        if (error) {
+          console.error(error);
+        } else {
+          // add admin information into the user table first.
+          if (result.length === 0) {
+            console.log("Creating system administrator!");
+            connection.query(
+              `INSERT INTO userInfo (username, password) VALUES ("${ADMIN_USERNAME}", "${ADMIN_PASSWORD}")`,
+              (error, result) => {
+                if (error) {
+                  console.error(error);
                 }
-              );
-            }
+              }
+            );
           }
-        });
-      }
+        }
+      });
     }
-  );
+  }
+);
 
-  // create table for channels
-  connection.query(
-    `CREATE TABLE IF NOT EXISTS channels (
+// create table for channels
+connection.query(
+  `CREATE TABLE IF NOT EXISTS channels (
     channelid int unsigned NOT NULL auto_increment,
     name varchar(200) NOT NULL,
     PRIMARY KEY (channelid)
 )`,
-    (error, result) => {
-      if (error) {
-        console.error(error);
-      }
+  (error, result) => {
+    if (error) {
+      console.error(error);
     }
-  );
+  }
+);
 
-  // create table for posts
-  connection.query(
-    `CREATE TABLE IF NOT EXISTS posts (
+// create table for posts
+connection.query(
+  `CREATE TABLE IF NOT EXISTS posts (
     postid int unsigned NOT NULL auto_increment,
     channel int unsigned NOT NULL,
     parentid int NOT NULL,
@@ -103,16 +102,16 @@ app.get("/init", (req, res) => {
     time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (postid)
 )`,
-    (error, result) => {
-      if (error) {
-        console.error(error);
-      }
+  (error, result) => {
+    if (error) {
+      console.error(error);
     }
-  );
+  }
+);
 
-  // create table for likes
-  connection.query(
-    `CREATE TABLE IF NOT EXISTS likes (
+// create table for likes
+connection.query(
+  `CREATE TABLE IF NOT EXISTS likes (
       likesid int unsigned NOT NULL auto_increment,
       user varchar(280) NOT NULL,
       channelid int unsigned NOT NULL,
@@ -121,15 +120,14 @@ app.get("/init", (req, res) => {
       dislikes int unsigned NOT NULL DEFAULT 0,
       PRIMARY KEY (likesid)
   )`,
-    (error, result) => {
-      if (error) {
-        console.error(error);
-      }
+  (error, result) => {
+    if (error) {
+      console.error(error);
     }
-  );
+  }
+);
 
-  res.send("Database and Table created!");
-});
+console.log("Database and Table created!");
 
 // login into system
 app.post("/login", (req, res) => {
@@ -186,6 +184,50 @@ app.post("/register", (req, res) => {
     }
   );
 });
+
+// to get all the users in the database
+app.get("/users", (req, res) => {
+  connection.query(`USE sheqqdb`, function (error, results) {
+    if (error) console.log(error);
+  });
+
+  connection.query(
+    "SELECT userid, username FROM userInfo",
+    (error, results) => {
+      if (error) {
+        console.error(error);
+        res.status(500).send("Internal Server Error");
+      } else {
+        // Extract only the userid and username properties
+        const userArray = results.map((user) => ({
+          userid: user.userid,
+          username: user.username,
+        }));
+
+        res.status(200).json(userArray);
+      }
+    }
+  );
+});
+
+// delete a user from database
+app.delete("/deleteuser/:userid", (req, res) => {
+  const userid = req.params.userid;
+
+  connection.query(
+    `DELETE FROM userInfo WHERE userid='${userid}'`,
+    (error, userResult) => {
+      if (error) {
+        console.error(error);
+        res.status(500).send("Internal Server Error: Unable to delete user");
+      } else {
+        console.log("User successfully removed from the system");
+        res.status(200).send("User successfully removed from the system");
+      }
+    }
+  );
+});
+
 
 // create channal
 app.post("/createChannel", (req, res) => {
